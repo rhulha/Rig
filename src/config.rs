@@ -43,6 +43,22 @@ impl Compat {
     }
 }
 
+impl Provider {
+    /// An apiKey of the form `${VAR}` is read from the environment, which the
+    /// .env loader has already populated, so keys stay out of models.json.
+    pub fn api_key(&self) -> Result<Option<String>, String> {
+        let Some(value) = self.api_key.as_deref() else {
+            return Ok(None);
+        };
+        let Some(var) = value.strip_prefix("${").and_then(|v| v.strip_suffix('}')) else {
+            return Ok(Some(value.to_string()));
+        };
+        std::env::var(var)
+            .map(Some)
+            .map_err(|_| format!("{var} is referenced in models.json but is not set"))
+    }
+}
+
 impl Config {
     pub fn load(path: &Path) -> Result<Self, String> {
         let text = std::fs::read_to_string(path)
