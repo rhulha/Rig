@@ -1,5 +1,6 @@
 mod chat;
 mod config;
+mod dotenv;
 mod tools;
 
 use config::Config;
@@ -90,6 +91,8 @@ fn run() -> Result<(), String> {
         print!("{USAGE}");
         return Ok(());
     };
+
+    dotenv::load(std::path::Path::new(".env"));
 
     let config = Config::load(&args.config)?;
 

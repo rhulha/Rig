@@ -7,6 +7,7 @@ mod move_file;
 mod read_file;
 mod sandbox;
 mod web_fetch;
+mod web_search;
 mod write_file;
 
 use serde_json::Value;
@@ -48,6 +49,7 @@ const REGISTRY: &[Tool] = &[
     tool!(delete),
     tool!(grep),
     tool!(web_fetch),
+    tool!(web_search),
 ];
 
 pub fn schemas() -> Value {
