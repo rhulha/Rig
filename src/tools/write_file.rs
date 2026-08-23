@@ -2,6 +2,7 @@ use serde_json::{json, Value};
 use std::path::Path;
 
 pub const NAME: &str = "write_file";
+pub const PATH_ARGS: &[&str] = &["path"];
 
 pub fn schema() -> Value {
     json!({

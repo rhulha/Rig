@@ -1,6 +1,7 @@
 use serde_json::{json, Value};
 
 pub const NAME: &str = "read_file";
+pub const PATH_ARGS: &[&str] = &["path"];
 
 pub fn schema() -> Value {
     json!({

@@ -2,6 +2,7 @@ use serde_json::{json, Value};
 use std::time::Duration;
 
 pub const NAME: &str = "web_fetch";
+pub const PATH_ARGS: &[&str] = &[];
 
 pub fn schema() -> Value {
     json!({

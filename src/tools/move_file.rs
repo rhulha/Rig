@@ -3,6 +3,7 @@ use std::path::Path;
 
 // The wire name is "move"; the module cannot be, because `move` is a keyword.
 pub const NAME: &str = "move";
+pub const PATH_ARGS: &[&str] = &["from", "to"];
 
 pub fn schema() -> Value {
     json!({
