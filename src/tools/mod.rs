@@ -10,6 +10,7 @@ mod mkdir;
 mod move_file;
 mod read_file;
 pub mod sandbox;
+mod shell;
 mod web_fetch;
 mod web_search;
 mod write_file;
@@ -55,6 +56,7 @@ const REGISTRY: &[Tool] = &[
     tool!(git_status),
     tool!(git_diff),
     tool!(git_log),
+    tool!(shell),
     tool!(web_fetch),
     tool!(web_search),
 ];
