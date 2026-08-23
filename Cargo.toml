@@ -7,3 +7,4 @@ edition = "2021"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "rustls-tls"] }
+gix = "0.87.0"

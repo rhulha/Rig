@@ -1,5 +1,9 @@
 mod delete;
 mod edit_file;
+mod git;
+mod git_diff;
+mod git_log;
+mod git_status;
 mod grep;
 mod list_dir;
 mod mkdir;
@@ -48,6 +52,9 @@ const REGISTRY: &[Tool] = &[
     tool!(move_file),
     tool!(delete),
     tool!(grep),
+    tool!(git_status),
+    tool!(git_diff),
+    tool!(git_log),
     tool!(web_fetch),
     tool!(web_search),
 ];

@@ -13,5 +13,6 @@ Rig is a minimal Rust command-line harness for running tool-capable language mod
 - Filesystem operations confined to the current working directory.
 - Configurable limit on agent tool-call rounds.
 - built-in HTTP web server running on port 8888 (start it with --serve)
+- built-in git support
 
 
