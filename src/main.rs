@@ -1,6 +1,7 @@
 mod chat;
 mod config;
 mod dotenv;
+mod server;
 mod tools;
 
 use config::Config;
@@ -24,6 +25,8 @@ Options:
   --model <id>        model id (default: first model of the provider)
   --effort <level>    reasoning effort, if the model declares support
   --max-steps <n>     tool-call rounds before giving up (default: 12)
+  --serve             also serve the working directory read-only on
+                      http://127.0.0.1:8888
   --list              print providers and models, then exit
   -h, --help          this text
 ";
@@ -45,6 +48,7 @@ struct Args {
     effort: Option<String>,
     max_steps: usize,
     list: bool,
+    serve: bool,
     prompt: String,
 }
 
@@ -56,6 +60,7 @@ fn parse_args() -> Result<Option<Args>, String> {
         effort: None,
         max_steps: 12,
         list: false,
+        serve: false,
         prompt: String::new(),
     };
     let mut rest: Vec<String> = Vec::new();
@@ -68,6 +73,7 @@ fn parse_args() -> Result<Option<Args>, String> {
         match arg.as_str() {
             "-h" | "--help" => return Ok(None),
             "--list" => args.list = true,
+            "--serve" => args.serve = true,
             "--config" => args.config = PathBuf::from(value("--config")?),
             "--provider" => args.provider = Some(value("--provider")?),
             "--model" => args.model = Some(value("--model")?),
@@ -104,9 +110,15 @@ fn run() -> Result<(), String> {
         config.resolve(args.provider.as_deref(), args.model.as_deref())?;
     eprintln!("[{provider_name}/{}]", model.id);
 
+    let cwd = std::env::current_dir().map_err(|e| e.to_string())?;
+
+    if args.serve {
+        server::spawn()?;
+        eprintln!("serving {} on http://127.0.0.1:{}", cwd.display(), server::PORT);
+    }
+
     let client = chat::Client::new(provider, model, args.effort)?;
     let tool_schemas = tools::schemas();
-    let cwd = std::env::current_dir().map_err(|e| e.to_string())?;
 
     let mut messages = vec![json!({
         "role": "system",

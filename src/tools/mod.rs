@@ -5,7 +5,7 @@ mod list_dir;
 mod mkdir;
 mod move_file;
 mod read_file;
-mod sandbox;
+pub mod sandbox;
 mod web_fetch;
 mod web_search;
 mod write_file;
