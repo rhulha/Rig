@@ -35,6 +35,14 @@ pub struct Compat {
     pub max_tokens_field: Option<String>,
     #[serde(default)]
     pub supports_reasoning_effort: bool,
+    /// Sampling temperature for this model. Omitted means greedy decoding.
+    #[serde(default)]
+    pub temperature: Option<f64>,
+    /// Nucleus and top-k sampling. Omitted leaves the provider's own default.
+    #[serde(default)]
+    pub top_p: Option<f64>,
+    #[serde(default)]
+    pub top_k: Option<u32>,
 }
 
 impl Compat {

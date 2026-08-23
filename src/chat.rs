@@ -31,6 +31,9 @@ pub struct Client {
     model: String,
     max_tokens_field: String,
     reasoning_effort: Option<String>,
+    temperature: f64,
+    top_p: Option<f64>,
+    top_k: Option<u32>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -82,6 +85,9 @@ impl Client {
             model: model.id.clone(),
             max_tokens_field: model.compat.max_tokens_field().to_string(),
             reasoning_effort: effort.filter(|_| model.compat.supports_reasoning_effort),
+            temperature: model.compat.temperature.unwrap_or(0.0),
+            top_p: model.compat.top_p,
+            top_k: model.compat.top_k,
         })
     }
 
@@ -131,9 +137,15 @@ impl Client {
             "model": self.model,
             "messages": messages,
             "tools": tools,
-            "temperature": 0,
+            "temperature": self.temperature,
         });
         body[&self.max_tokens_field] = json!(OPENAI_MAX_TOKENS);
+        if let Some(top_p) = self.top_p {
+            body["top_p"] = json!(top_p);
+        }
+        if let Some(top_k) = self.top_k {
+            body["top_k"] = json!(top_k);
+        }
         if let Some(effort) = &self.reasoning_effort {
             body["reasoning_effort"] = json!(effort);
         }
