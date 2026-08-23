@@ -211,13 +211,28 @@ fn turn(
     Err(format!("gave up after {max_steps} tool rounds"))
 }
 
+/// One-line summary of a tool call's arguments. Values are clipped so that a
+/// whole file body passed to write_file does not flood the terminal.
 fn compact(args: &Value) -> String {
     args.as_object()
         .map(|map| {
             map.iter()
-                .map(|(k, v)| format!("{k}={v}"))
+                .map(|(k, v)| format!("{k}={}", clip(v)))
                 .collect::<Vec<_>>()
                 .join(", ")
         })
         .unwrap_or_default()
+}
+
+fn clip(value: &Value) -> String {
+    const MAX: usize = 60;
+
+    // Rendering as JSON keeps newlines escaped, so the trace stays on one line.
+    let text = value.to_string();
+    let length = text.chars().count();
+    if length <= MAX {
+        return text;
+    }
+    let head: String = text.chars().take(MAX).collect();
+    format!("{head}... +{} chars", length - MAX)
 }
