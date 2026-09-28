@@ -73,7 +73,7 @@ impl Client {
         }
 
         let http = reqwest::blocking::Client::builder()
-            .timeout(Duration::from_secs(300))
+            .timeout(Duration::from_secs(600))
             .build()
             .map_err(|e| format!("cannot build http client: {e}"))?;
 
@@ -151,10 +151,20 @@ impl Client {
         }
 
         let parsed = self.send(format!("{}/chat/completions", self.base_url), body, false)?;
-        let message = parsed["choices"][0]["message"].clone();
-        if message.is_null() {
-            return Err(format!("no message in response: {parsed}"));
+        if parsed["choices"][0]["finish_reason"] == "length" {
+            return Err(format!(
+                "response cut off at the token limit ({})",
+                parsed["usage"]
+            ));
         }
+        let mut message = parsed["choices"][0]["message"].clone();
+        let Some(fields) = message.as_object_mut() else {
+            return Err(format!("no message in response: {parsed}"));
+        };
+        // Replaying reasoning makes local models (Gemma via LM Studio) write
+        // their thinking and tool calls as plain text on later turns.
+        fields.remove("reasoning_content");
+        fields.remove("reasoning");
         Ok(message)
     }
 
@@ -177,6 +187,12 @@ impl Client {
         }
 
         let parsed = self.send(format!("{}/messages", self.base_url), body, true)?;
+        if parsed["stop_reason"] == "max_tokens" {
+            return Err(format!(
+                "response cut off at the token limit ({})",
+                parsed["usage"]
+            ));
+        }
         let blocks = parsed["content"]
             .as_array()
             .ok_or_else(|| format!("no content in response: {parsed}"))?;

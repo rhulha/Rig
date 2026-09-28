@@ -61,6 +61,20 @@ pub fn edit_file(
     }
 
     let text = std::fs::read_to_string(path).map_err(|e| format!("{path}: {e}"))?;
+
+    // read_file shows lines without their `\r` and with number prefixes; models
+    // copy both habits into their edits, so undo them before matching.
+    let crlf = text.contains("\r\n");
+    let mut old = fit_line_endings(old_string, crlf);
+    let mut new = fit_line_endings(new_string, crlf);
+    if !text.contains(&old) {
+        if let Some(stripped) = strip_line_numbers(&old) {
+            old = stripped;
+            new = strip_line_numbers(&new).unwrap_or(new);
+        }
+    }
+    let (old_string, new_string) = (old.as_str(), new.as_str());
+
     let hits = text.matches(old_string).count();
 
     match hits {
@@ -90,4 +104,57 @@ pub fn edit_file(
     Ok(format!(
         "Edited {path}: {replaced} replacement{plural}, first at line {line}"
     ))
+}
+
+fn fit_line_endings(s: &str, crlf: bool) -> String {
+    let lf = s.replace("\r\n", "\n");
+    if crlf {
+        lf.replace('\n', "\r\n")
+    } else {
+        lf
+    }
+}
+
+// line numbers so the model can reference locations and request specific start_line/end_line ranges.
+// The downside is that models sometimes copy those prefixes into edits.
+// the numbers are useful for navigation but unnecessary for applying edits.
+
+/// Remove the `  42  ` prefixes read_file puts in front of each line, but only
+/// when every line carries one, so ordinary text starting with digits survives.
+fn strip_line_numbers(s: &str) -> Option<String> {
+    let mut out = String::with_capacity(s.len());
+    for piece in s.split_inclusive('\n') {
+        let rest = piece.trim_start_matches(' ');
+        let digits = rest.len() - rest.trim_start_matches(|c: char| c.is_ascii_digit()).len();
+        if digits == 0 {
+            return None;
+        }
+        let body = &rest[digits..];
+        // An empty line's trailing separator is often trimmed away.
+        if body.trim_end_matches(['\r', '\n']).is_empty() {
+            out.push_str(body);
+        } else {
+            out.push_str(body.strip_prefix("  ")?);
+        }
+    }
+    Some(out)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn crlf_and_line_numbers() {
+        let dir = std::env::temp_dir().join("rig_edit_test.txt");
+        let path = dir.to_str().unwrap();
+        std::fs::write(path, "a\r\n\tlast line\r\n\r\n").unwrap();
+
+        edit_file(path, "198  \tlast line\n199\n", "198  \tlast line\n199  \n200  \tnew\n", false).unwrap();
+        assert_eq!(std::fs::read_to_string(path).unwrap(), "a\r\n\tlast line\r\n\r\n\tnew\r\n");
+
+        edit_file(path, "a\n\tlast", "b\n\tlast", false).unwrap();
+        assert_eq!(std::fs::read_to_string(path).unwrap(), "b\r\n\tlast line\r\n\r\n\tnew\r\n");
+        std::fs::remove_file(path).unwrap();
+    }
 }
