@@ -25,6 +25,9 @@ Options:
   --model <id>        model id (default: first model of the provider)
   --effort <level>    reasoning effort, if the model declares support
   --max-steps <n>     tool-call rounds before giving up (default: 12)
+  --prompt-file <path>
+                      read the prompt from a file; a prompt given on the
+                      command line is appended to it
   --serve             also serve the working directory read-only on
                       http://127.0.0.1:8888
   --list              print providers and models, then exit
@@ -64,6 +67,7 @@ fn parse_args() -> Result<Option<Args>, String> {
         prompt: String::new(),
     };
     let mut rest: Vec<String> = Vec::new();
+    let mut prompt_file: Option<PathBuf> = None;
     let mut it = std::env::args().skip(1);
 
     while let Some(arg) = it.next() {
@@ -78,6 +82,7 @@ fn parse_args() -> Result<Option<Args>, String> {
             "--provider" => args.provider = Some(value("--provider")?),
             "--model" => args.model = Some(value("--model")?),
             "--effort" => args.effort = Some(value("--effort")?),
+            "--prompt-file" => prompt_file = Some(PathBuf::from(value("--prompt-file")?)),
             "--max-steps" => {
                 args.max_steps = value("--max-steps")?
                     .parse()
@@ -89,6 +94,17 @@ fn parse_args() -> Result<Option<Args>, String> {
     }
 
     args.prompt = rest.join(" ");
+    if let Some(path) = prompt_file {
+        let text = std::fs::read_to_string(&path)
+            .map_err(|e| format!("cannot read {}: {e}", path.display()))?;
+        args.prompt = if args.prompt.is_empty() {
+            text
+        } else {
+            format!("{}
+
+{}", text.trim_end(), args.prompt)
+        };
+    }
     Ok(Some(args))
 }
 

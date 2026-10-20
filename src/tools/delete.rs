@@ -1,4 +1,5 @@
 use serde_json::{json, Value};
+use std::io::Write;
 use std::path::Path;
 
 pub const NAME: &str = "delete";
@@ -59,6 +60,10 @@ pub fn delete(path: &str, recursive: bool) -> Result<String, String> {
         ));
     }
 
+    if count > 0 && !confirm(path, count)? {
+        return Err(format!("the user declined deleting {path}"));
+    }
+
     if recursive {
         std::fs::remove_dir_all(target).map_err(|e| format!("{path}: {e}"))?;
         Ok(format!("Deleted directory {path} and its {count} entries"))
@@ -66,4 +71,17 @@ pub fn delete(path: &str, recursive: bool) -> Result<String, String> {
         std::fs::remove_dir(target).map_err(|e| format!("{path}: {e}"))?;
         Ok(format!("Deleted empty directory {path}"))
     }
+}
+
+/// Ask on the terminal before a non-empty directory goes. Anything but "y" or
+/// "yes", including a closed stdin, counts as no.
+fn confirm(path: &str, count: usize) -> Result<bool, String> {
+    eprint!("  delete {path} and its {count} entries? [y/N] ");
+    std::io::stderr().flush().map_err(|e| e.to_string())?;
+
+    let mut answer = String::new();
+    std::io::stdin()
+        .read_line(&mut answer)
+        .map_err(|e| e.to_string())?;
+    Ok(matches!(answer.trim().to_lowercase().as_str(), "y" | "yes"))
 }
